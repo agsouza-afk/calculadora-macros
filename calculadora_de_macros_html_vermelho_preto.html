@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Calculadora de Macronutrientes</title>
+  <style>
+    :root{
+      --red:#E53935; --red-dark:#B71C1C; --black:#000; --gray-900:#1f2937; --gray-700:#374151; --gray-500:#6b7280; --gray-200:#e5e7eb; --white:#fff;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial,"Noto Sans",sans-serif;background:linear-gradient(180deg,#0a0a0a 0%, #161616 100%);color:var(--white);}    
+    .container{max-width:980px;margin:32px auto;padding:24px}
+    .card{background:#0f0f10;border:1px solid #1e1e1f;border-radius:20px;box-shadow:0 20px 40px rgba(0,0,0,.35);overflow:hidden}
+    header{display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid #1f1f1f;background:linear-gradient(90deg, rgba(229,57,53,.08), transparent)}
+    header h1{font-size:1.35rem;margin:0;letter-spacing:.3px}
+    header .tag{font-size:.8rem;color:#f3f4f6;background:linear-gradient(135deg, var(--red), var(--red-dark));padding:6px 10px;border-radius:999px;font-weight:600}
+
+    .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:18px;padding:20px}
+    .col-6{grid-column:span 6}
+    .col-12{grid-column:span 12}
+    @media (max-width:900px){.col-6{grid-column:span 12}}
+
+    label{display:block;font-size:.9rem;margin-bottom:8px;color:#e5e7eb}
+    input, select{width:100%;padding:12px 14px;border-radius:12px;border:1px solid #242426;background:#111214;color:#f9fafb;outline:none;transition:.2s}
+    input:focus, select:focus{border-color:var(--red)}
+
+    .hint{font-size:.8rem;color:#9ca3af;margin-top:6px}
+    .section-title{font-weight:700;color:#f9fafb;text-transform:uppercase;letter-spacing:.12em;font-size:.8rem;margin:16px 0 6px}
+
+    .btn{appearance:none;border:0;border-radius:14px;padding:12px 18px;font-weight:700;cursor:pointer;transition:.2s}
+    .btn-primary{background:linear-gradient(135deg,var(--red),var(--red-dark));color:white}
+    .btn-primary:hover{filter:brightness(1.05)}
+    .btn-ghost{background:transparent;border:1px solid #2a2a2b;color:#e5e7eb}
+    .btn-ghost:hover{border-color:#3a3a3b}
+
+    .results{padding:20px;border-top:1px solid #1f1f1f;background:radial-gradient(1200px 600px at 100% -100%, rgba(229,57,53,.10), transparent 60%)}
+    table{width:100%;border-collapse:collapse;background:#0c0c0d;border-radius:14px;overflow:hidden}
+    th, td{padding:14px 12px;text-align:left;border-bottom:1px dashed #222}
+    th{font-size:.85rem;color:#d1d5db;text-transform:uppercase;letter-spacing:.08em;background:#121213}
+    tr:last-child td{border-bottom:0}
+
+    .pill{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;background:#151517;border:1px solid #232325;color:#e5e7eb;font-size:.8rem}
+    .pill .dot{width:8px;height:8px;border-radius:999px;background:var(--red)}
+
+    .footer{display:flex;gap:12px;flex-wrap:wrap;margin-top:16px}
+    .small{font-size:.85rem;color:#d1d5db}
+    .muted{color:#9ca3af}
+    .kbd{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;background:#151517;border:1px solid #2b2b2c;border-bottom-width:2px;border-radius:8px;padding:2px 6px}
+
+    .note{margin-top:10px;border-left:3px solid var(--red);padding:10px 12px;background:#111112;color:#e5e7eb;border-radius:8px}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <header>
+        <h1>Calculadora de Macronutrientes <span class="muted">(BMR Mifflin–St Jeor)</span></h1>
+        <span class="tag">Vermelho & Preto</span>
+      </header>
+
+      <form id="form" class="grid" onsubmit="event.preventDefault(); calcular();">
+        <div class="col-6">
+          <label for="sexo">Sexo</label>
+          <select id="sexo" required>
+            <option value="masculino">Masculino</option>
+            <option value="feminino">Feminino</option>
+          </select>
+        </div>
+
+        <div class="col-6">
+          <label for="idade">Idade <span class="muted">(anos)</span></label>
+          <input id="idade" type="number" inputmode="numeric" min="10" max="100" placeholder="ex.: 22" required />
+        </div>
+
+        <div class="col-6">
+          <label for="peso">Peso <span class="muted">(kg)</span></label>
+          <input id="peso" type="number" inputmode="decimal" step="0.1" min="30" max="250" placeholder="ex.: 75" required />
+        </div>
+
+        <div class="col-6">
+          <label for="altura">Altura <span class="muted">(cm)</span></label>
+          <input id="altura" type="number" inputmode="numeric" min="120" max="230" placeholder="ex.: 178" required />
+        </div>
+
+        <div class="col-6">
+          <label for="atividade">Nível de Atividade</label>
+          <select id="atividade" required>
+            <option value="1.2">Sedentário (pouca ou nenhuma atividade)</option>
+            <option value="1.375">Levemente ativo (1–3x/semana)</option>
+            <option value="1.55">Moderadamente ativo (3–5x/semana)</option>
+            <option value="1.725">Muito ativo (6–7x/semana)</option>
+            <option value="1.9">Atleta (2x/dia)</option>
+          </select>
+        </div>
+
+        <div class="col-6">
+          <label for="objetivo">Objetivo</label>
+          <select id="objetivo" required>
+            <option value="manter">Manter peso</option>
+            <option value="ganhar">Ganhar massa</option>
+            <option value="perder">Perder gordura</option>
+          </select>
+        </div>
+
+        <div class="col-6">
+          <label for="fatorProteina">Fator de Proteína <span class="muted">(g/kg)</span></label>
+          <select id="fatorProteina">
+            <option value="1.6">1,6 g/kg (mínimo eficaz)</option>
+            <option value="1.8" selected>1,8 g/kg (padrão)</option>
+            <option value="2.0">2,0 g/kg (treino intenso)</option>
+            <option value="2.2">2,2 g/kg (avançados)</option>
+          </select>
+          <div class="hint">Edite se preferir. Para iniciantes, 1,6–2,0 g/kg é suficiente.</div>
+        </div>
+
+        <div class="col-6">
+          <label for="percentGordura">Gorduras (% das calorias)</label>
+          <select id="percentGordura">
+            <option value="0.25">25%</option>
+            <option value="0.30" selected>30%</option>
+            <option value="0.35">35%</option>
+          </select>
+          <div class="hint">O restante de calorias será destinado a carboidratos.</div>
+        </div>
+
+        <div class="col-12">
+          <div class="section-title">Ajuste de calorias por objetivo</div>
+          <div class="small">Ganhar: +10% | Perder: −15% | Manter: 0% (ajustável no código, se quiser).</div>
+        </div>
+
+        <div class="col-12" style="display:flex;gap:12px;flex-wrap:wrap">
+          <button class="btn btn-primary" type="submit">Calcular</button>
+          <button class="btn btn-ghost" type="button" onclick="limpar()">Limpar</button>
+          <button class="btn btn-ghost" type="button" onclick="copiar()">Copiar resultados</button>
+          <button class="btn btn-ghost" type="button" onclick="baixarCSV()">Baixar CSV</button>
+        </div>
+
+        <div class="col-12 results" id="resultado" hidden>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px">
+            <span class="pill"><span class="dot"></span> Total diário estimado</span>
+            <span class="small">Fórmulas: BMR Mifflin–St Jeor × fator de atividade ± objetivo</span>
+          </div>
+          <div id="resumo" class="small" style="margin-bottom:12px"></div>
+          <table>
+            <thead>
+              <tr>
+                <th>Macronutriente</th>
+                <th>Gramas/dia</th>
+                <th>Kcal/dia</th>
+                <th>% das kcal</th>
+              </tr>
+            </thead>
+            <tbody id="tabelaMacros"></tbody>
+          </table>
+          <div class="note small" id="nota"></div>
+        </div>
+      </form>
+    </div>
+
+    <p class="muted small" style="margin-top:14px">Dica: você pode incorporar esta página como link no seu eBook (PDF) ou hospedar no GitHub Pages.
+    </p>
+  </div>
+
+  <script>
+    function round(n, d=0){ const p=Math.pow(10,d); return Math.round((n+Number.EPSILON)*p)/p }
+
+    function bmrMifflin(sexo, peso, altura, idade){
+      // peso (kg), altura (cm), idade (anos)
+      // Masculino: 10*peso + 6.25*altura - 5*idade + 5
+      // Feminino:  10*peso + 6.25*altura - 5*idade - 161
+      const base = 10*peso + 6.25*altura - 5*idade;
+      return sexo === 'masculino' ? base + 5 : base - 161;
+    }
+
+    function objetivoDelta(obj){
+      // Ajustes padrão: ganhar +10%, perder -15%, manter 0%
+      if(obj==='ganhar') return 1.10;
+      if(obj==='perder') return 0.85;
+      return 1.00;
+    }
+
+    function calcular(){
+      const sexo = document.getElementById('sexo').value;
+      const idade = parseInt(document.getElementById('idade').value,10);
+      const peso = parseFloat(document.getElementById('peso').value);
+      const altura = parseInt(document.getElementById('altura').value,10);
+      const atividade = parseFloat(document.getElementById('atividade').value);
+      const objetivo = document.getElementById('objetivo').value;
+      const fatorProteina = parseFloat(document.getElementById('fatorProteina').value);
+      const pctFat = parseFloat(document.getElementById('percentGordura').value);
+
+      if(!sexo||!idade||!peso||!altura||!atividade){ alert('Preencha todos os campos.'); return; }
+
+      const bmr = bmrMifflin(sexo, peso, altura, idade);
+      const tdee = bmr * atividade;
+      const alvoKcal = tdee * objetivoDelta(objetivo);
+
+      // Proteína por fator g/kg
+      const protG = peso * fatorProteina;
+      const protKcal = protG * 4;
+
+      // Gorduras por % do total
+      const fatKcal = alvoKcal * pctFat;
+      const fatG = fatKcal / 9;
+
+      // Carboidratos: resto de kcal
+      const restoKcal = Math.max(alvoKcal - protKcal - fatKcal, 0);
+      const carbG = restoKcal / 4;
+
+      const protPct = (protKcal/alvoKcal)*100;
+      const carbPct = (restoKcal/alvoKcal)*100;
+      const fatPct  = (fatKcal/alvoKcal)*100;
+
+      // Montar tabela
+      const tbody = document.getElementById('tabelaMacros');
+      tbody.innerHTML = '';
+      const linhas = [
+        {nome:'Proteínas', g: protG, kcal: protKcal, pct: protPct},
+        {nome:'Carboidratos', g: carbG, kcal: restoKcal, pct: carbPct},
+        {nome:'Gorduras', g: fatG, kcal: fatKcal, pct: fatPct},
+      ];
+      for(const r of linhas){
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${r.nome}</td><td>${round(r.g,0)} g</td><td>${round(r.kcal,0)} kcal</td><td>${round(r.pct,1)}%</td>`;
+        tbody.appendChild(tr);
+      }
+
+      // Resumo
+      const resumo = document.getElementById('resumo');
+      resumo.textContent = `BMR: ${round(bmr,0)} kcal • TDEE: ${round(tdee,0)} kcal • Alvo diário (${objetivo}): ${round(alvoKcal,0)} kcal`;
+
+      // Nota
+      const nota = document.getElementById('nota');
+      nota.textContent = `Observações: Proteína calculada por fator de ${fatorProteina} g/kg; Gorduras em ${round(pctFat*100,0)}% das calorias; Carboidratos recebem o restante. Ajustes finos podem ser feitos conforme resposta individual (medidas, desempenho e adesão).`;
+
+      document.getElementById('resultado').hidden = false;
+    }
+
+    function limpar(){
+      document.getElementById('form').reset();
+      document.getElementById('resultado').hidden = true;
+    }
+
+    function copiar(){
+      const res = document.getElementById('resultado');
+      if(res.hidden){ alert('Calcule primeiro.'); return; }
+      const txt = document.getElementById('resumo').textContent + '\n' +
+`Macronutrientes (diário):\n` +
+      Array.from(document.querySelectorAll('#tabelaMacros tr')).map(tr=>{
+        const tds = tr.querySelectorAll('td');
+        return `${tds[0].textContent}: ${tds[1].textContent} | ${tds[2].textContent} | ${tds[3].textContent}`;
+      }).join('\n');
+      navigator.clipboard.writeText(txt).then(()=>alert('Resultados copiados!'));
+    }
+
+    function baixarCSV(){
+      const res = document.getElementById('resultado');
+      if(res.hidden){ alert('Calcule primeiro.'); return; }
+      const rows = [['Macronutriente','Gramas/dia','Kcal/dia','%']];
+      document.querySelectorAll('#tabelaMacros tr').forEach(tr=>{
+        const tds = tr.querySelectorAll('td');
+        rows.push([tds[0].textContent, tds[1].textContent.replace(' g',''), tds[2].textContent.replace(' kcal',''), tds[3].textContent.replace('%','')]);
+      });
+      const csv = rows.map(r=>r.join(',')).join('\n');
+      const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'macros.csv'; a.click();
+      URL.revokeObjectURL(url);
+    }
+  </script>
+</body>
+</html>
